@@ -1,0 +1,6 @@
+{
+  "name": "PhylOTtastic",
+  "description": "Extract and visualize subtrees from the Open Tree of Life",
+  "repository": "https://github.com/gaurav/phylOTtastic",
+  "image": "heroku/nodejs"
+}

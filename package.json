@@ -1,0 +1,25 @@
+{
+  "name": "PhylOTtastic",
+  "version": "0.0.1",
+  "description": "Extract and visualize subtrees from the Open Tree of Life",
+  "main": "main.js",
+  "engines": {
+    "node": "5.1"
+  }, 
+  "scripts": {
+    "start": "node main.js"
+  },
+  "dependencies": {
+    "ejs": "2.3.3",
+    "express": "4.13.3",
+    "dotenv": "2.0.0",
+    "body-parser": "1.15.0",
+    "multer": "1.1.0",
+    "unirest": "0.4.2"
+  },
+ "repository": {
+    "type": "git",
+    "url": "https://github.com/gaurav/phylOTtastic"
+  },
+  "license": "GPL-3.0"
+}

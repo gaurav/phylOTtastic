@@ -1,0 +1,22 @@
+/*
+ * CSS for PhylOTtastic
+ *
+ * (c) Gaurav Vaidya, 2015
+ */
+
+/* Copied from http://getbootstrap.com/examples/dashboard/dashboard.css */
+
+body {
+    margin: 2em;
+}
+
+p {
+    margin-top: 1em;
+}
+
+p strong {
+    font-family: serif;
+    font-size: 130%;
+}
+
+
