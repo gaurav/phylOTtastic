@@ -34,15 +34,32 @@ function convert_names_into_list(req, res, next) {
     names = names.filter(function(el) { return (!el.match(/^\s*$/)); });
 
     if(('names' in req.body) && (req.body.names.join('\n') == res.variables.taxon_names)) {
-        // We already have 'names' coming from the author, ignore.     
+        // req.body.names and res.variables.taxon_names are in sync, leave it.
         req.body.flag_check_all = 0;
     } else {
-        // Pretend the user sent us a list of names: erase all (now redundant)
-        // input parameters, reset taxon_names to names.join('\n')
-        res.variables.taxon_names = (req.body.names || []).join('\n');
-        req.body = {
-            'names': names
-        };
+        if(req.body.submit_btn == 'step1') {
+            // If we're in step1, we should reset req.body.names so that it's in
+            // sync with taxon_names.
+            req.body.names = names;
+
+            // Get rid of corrected names and everything else. 
+            req.body = {
+                'taxon_names': res.variables.taxon_names,
+                'names': req.body.names
+            };
+
+        } else if(req.body.submit_btn == 'step2') {
+            // If we're in step 2, we need to change the taxon_names to
+            // bring it in sync with req.body.names
+            res.variables.taxon_names = req.body.names.join('\n');
+
+            // Don't need to reset!
+        } else {
+            // Eh? Default to taxon_names.
+            req.body.names = names;
+        }
+
+        // TODO: do we still need this? Delete.
         req.body.flag_check_all = 1;
     }
 
@@ -50,9 +67,13 @@ function convert_names_into_list(req, res, next) {
 }
 
 function lookup_names_on_ott(req, res, next) {
-    if('names' in req.body) {
+    if(!('names' in req.body)) {
+        // No names? Do nothing.
+        next();
+    } else {
         var index = 0;
         var names = [];
+        var corrected_names = [];
 
         req.body.names.forEach(function(verbatim) {
             index++;
@@ -72,36 +93,71 @@ function lookup_names_on_ott(req, res, next) {
             } else {
                 name.corrected = name.verbatim;
             }
-
-            // Reconcile the corrected name, but ONLY if the name is checked.
-            if(name.checked) {
-                unirest.get('https://api.opentreeoflife.org/v2/tnrs/match_names')
-                    .end(function(response) {
-                        result = JSON.parse(response.content);
-                        name.mapped_to_ott_id = result;
-                    });
-            }
-
+ 
             names.push(name);
+            corrected_names.push(name.corrected);
         });
 
         res.variables.names = names;
-    }
 
-    next();
+        // Match all names on OTT.
+        unirest.post('https://api.opentreeoflife.org/v2/tnrs/match_names')
+            .header('Accept', 'application/json')
+            .send({'names': corrected_names})
+            .end(function(response) {
+                r = response.body;
+
+                if('results' in r) {
+                    results = r.results;
+
+                    results.forEach(function(result) {
+                        id = result.id;
+
+                        our_names = res.variables.names.filter(function(name) { return name.corrected == id; });
+                        our_names.forEach(function(our_name) {
+                            our_name.matched = result.matches[0];
+                            our_name.matched.taxonomy = r.taxonomy;
+                        });
+                    });
+                } 
+
+                next();
+            });
+    }
+}
+
+function lookup_tree_on_ott(req, res, next) {
+    if(!('ott_id' in req.body)) {
+        next();
+    } else {
+        ott_ids = req.body.ott_id;
+
+        // TODO: Only pick selected ott_ids.
+        // console.log(ott_ids);
+
+        unirest.post('https://api.opentreeoflife.org/v2/tree_of_life/induced_subtree')
+            .send({'ott_ids': ott_ids})
+            .end(function(response) {
+                // console.log(response.body);
+                res.variables.newick = response.body.newick;
+                next();
+            });
+    }
 }
 
 // Display main page.
 app.all('/', 
     function(req, res, next) { 
-        console.log(req.body);
+        // console.log(req.body);
         res.variables = {
             'taxon_names': "",
-            'names': []
+            'names': [],
+            'newick': ""
         }; 
         next(); },
     convert_names_into_list,
     lookup_names_on_ott,
+    lookup_tree_on_ott,
     function(req, res) {
         res.render('pages/index', res.variables);
     }

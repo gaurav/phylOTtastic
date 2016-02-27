@@ -8,9 +8,9 @@
 
 <p><strong>Step 1.</strong> Enter a list of taxa below.</p>
 
-<div style="display: inline-block"><center>
+<div id="step_1" style="display: inline-block"><center>
     <textarea style="margin: auto" name="taxon_names" rows="20" cols="80"><%= taxon_names %></textarea><br>
-    <button class="btn btn-large <% if(taxon_names == '') { %>btn-primary<% } %>" style="margin: auto; width:100%;" type="submit">Retrieve OTT identifiers for taxon names</button>
+    <button name="submit_btn" value="step1" class="btn btn-large <% if(taxon_names == '') { %>btn-primary<% } %>" style="margin: auto; width:100%;" type="submit">Retrieve OTT identifiers for taxon names</button>
 </center></div>
 
 <hr>
@@ -29,7 +29,7 @@
                 <th>Corrected name</th>
                 <th>Mapped to</th>
                 <th>Authority</th>
-                <th>Regnum</th>
+                <th>Nomenclatural code</th>
                 <th>Links</th>
             </tr>
         </thead>
@@ -48,26 +48,54 @@
                     <td>
                         <input type="text" name="corrected_<%= index %>" value="<%= name['corrected'] %>" />
                     </td>
-                    <% if(name.mapped_to_ott_id) { %>
+                    <% if(name.matched) { 
+                        matched = name.matched;    
+                    %>
                         <td>
-
+                            <input type="hidden" name="ott_id" value="<%= matched['ot:ottId'] %>" />
+                            <% if(matched['ot:ottTaxonName'].split(/\s+/).length > 1) { %><em><% } %>
+                            <a target="_new" href="https://tree.opentreeoflife.org/taxonomy/browse?id=<%= matched['ot:ottId'] %>"><%= matched['ot:ottTaxonName'] %></a>
+                            <% if(matched['ot:ottTaxonName'].split(/\s+/).length > 1) { %></em><% } %>
+                        </td>
+                        <td>
+                            <a target="_new"  href="<%= matched.taxonomy['weburl'] %>"><%= matched.taxonomy['source'] %></a>
+                        </td>
+                        <td>
+                            <%= matched['nomenclature_code'] %>
+                        </td>
+                        <td>
+                            <a target="_new" href="https://tree.opentreeoflife.org/opentree/ottol@<%= matched['ot:ottId'] %>">On the OT Synthetic Tree</a>
+                        </td>
+                    <% } else { %>
+                        <td colspan="4">
+                            <em>No matches found!</em>
                         </td>
                     <% } %>
                 </tr>
             <% }); %>
         </tbody>
     </table>
-
-    <input style="margin: auto; width:100%;" type="submit" value="Retrieve tree">
+    <button name="submit_btn" value="step2" class="btn btn-large <% if(index > 0) { %>btn-primary<% } %>" style="margin: auto; width:100%;" type="submit">Retrieve tree</button>
 </div>
 
 <hr>
 
 <p><strong>Step 3.</strong> Here's your tree!</p>
 
-<p>In Newick format:</p>
+<div style="display: inline-block">
+<% if(newick != '') { %>
+    <h3>As drawn by ETE Toolkit:</h3>
 
-<textarea></textarea>
+    <img src="http://etetoolkit.org/get_svg?tree=<%= newick %>">
+    
+    <p>For more details, please visit <a href="http://etetoolkit.org/treeview/">ETE's website</a>.</p>
+<% } %>
+
+
+<h3>In Newick format:</h3>
+
+<textarea name="newick" rows="10" cols="200"><%= newick %></textarea>
+</div>
 
 </form>
 
